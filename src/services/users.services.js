@@ -1,29 +1,55 @@
-import Services from "./class.services.js";
-import factory from '../persistence/daos/factory.js';
-import {logger} from "../utils/logger.js"
+import UserDao from "../persistence/daos/mongodb/dao/user.dao.js";
+import { loggerDev } from "../utils/logger.js";
 
-const { userManager } = factory;
+const usersDao = new UserDao();
 
-export default class UserService extends Services {
-  constructor(){
-    super(userManager)
+export const createUserService = async (userData) => {
+    try {
+        const newUser = await usersDao.createUser(userData);            
+        return newUser
+    } catch (error) {
+        loggerDev.error(error.message)
+        throw new Error(error)
+    }
+};
+
+export const loginUserService = async (userData) => {
+    try {
+        const login = await usersDao.loginUser(userData);
+        return login
+    } catch (error) {
+        loggerDev.error(error.message)
+        throw new Error(error)
+    }
+};
+
+export const getByIDService = async (id) => {
+    try {
+        const getByID = await usersDao.getUserByID(id);
+        return getByID
+    } catch (error) {
+        loggerDev.error(error.message)
+        throw new Error(error)
+    }
+};
+
+export const getByEmailService = async (email) => {
+    try { 
+        const getByEmail = await usersDao.getUserByEmail(email);
+        return getByEmail
+    } catch (error) {
+        loggerDev.error(error.message)
+        throw new Error(error)
+    }
+};
+
+export const getUserDto = async (id) => {
+    try {
+      const data = await usersDaoMongo.getByIdDTO(id);
+      if(!data) return false
+     return data
+  } catch (error) {
+        loggerDev.error(error.message)
+        throw new Error(error)           
   }
-
-  register = async (user) => {
-    try {
-      const token = await this.manager.register(user);
-      return token;
-    } catch (error) {
-      logger.error("Error en el servicio de register user")
-    }
-  };
-
-  login = async (user) => {
-    try {
-      const userExist = await this.manager.login(user);
-      return userExist;
-    } catch (error) {
-      logger.error("Error en el servicio de login user")
-    }
-  };
-}
+};

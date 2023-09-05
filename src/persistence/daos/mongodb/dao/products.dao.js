@@ -1,113 +1,88 @@
 import { ProductsModel } from "../models/products.model.js";
-import { CartModel } from "../models/carts.model.js";
-import {logger} from "../../../../utils/logger.js";
+import { UserModel } from "../models/user.model.js"
+import { loggerDev } from "../../../../utils/logger.js";
 
-export default class ProductsDaoMongoDB {
-  async addProductToCart(cartId, prodId) {
-    try {
-      const cart = await CartModel.findById(cartId);
-      cart.products.push(prodId);
-      cart.save();
-    } catch (error) {
-      logger.error("Error al agregar un producto al carrito en mongodb")
-    }
-  }
-  async getProductById(id) {
-    try {
-      const response = await ProductsModel.findById(id)
-      return response;
-    } catch (error) {
-      logger.error("Error al un producto por Id en mongodb")
-    }
-  }
+export default class ProductDao {
 
-  async getAllProducts(page = 1, limit = 10) {
-    try {
-      const response = await ProductsModel.paginate({}, { page, limit });
-      return response;
-    } catch (error) {
-      logger.error("Error al traer todos los productos en mongodb")
-    }
-  }
-
-  async createProduct(obj) {
-    try {
-      const response = await ProductsModel.create(obj);
-      return response;
-    } catch (error) {
-      logger.error("Error al crear un producto en mongodb")
-    }
-  }
-
-  async updateProduct(id, obj) {
-    try {
-      await ProductsModel.updateOne({ _id: id }, obj);
-      return obj;
-    } catch (error) {
-      logger.error("Error al actualizar un producto en mongodb")
-    }
-  }
-
-  async deleteProduct(id) {
-    try {
-      const response = await ProductsModel.findByIdAndDelete(id);
-      return response;
-    } catch (error) {
-      logger.error("Error al eliminar un producto en mongodb")
-    }
-  }
-
-  async deleteProductCart(cartId, prodId) {
-    try {
-      const cart = await CartModel.findById(cartId);
-
-      if (!cart) {
-        throw new Error("The cart you are searching for does not exist!");
-      }
-
-      const index = cart.products.indexOf(prodId);
-
-      if (index === -1) {
-        throw new Error(
-          `The product with ID ${prodId} does not exist in the cart!`
-        );
-      }
-
-      cart.products.splice(index, 1);
-      await cart.save();
-
-      return cart;
-    } catch (error) {
-      logger.error("Error al eliminar un producto de un carrito en mongodb")
-    }
-  }
-
-  async filtrarPorCategorias(category) { 
-    try {
-      const response = await ProductsModel.aggregate([ 
-
-        {
-          $match: { category: `${category}` }
+    async getAllProducts (page=1, limit=10, category) {
+        try{
+            if (category){
+                const response = await ProductsModel.paginate({category: category},{page, limit});
+                return response;
+            } else {
+                const response = await ProductsModel.paginate({},{page, limit})
+                return response
+            }
+        }catch (error) {
+            loggerDev.error(error.message)
+            throw new Error(error)
         }
-      ])
-      return response;
-    } catch (error) {
-      logger.error("Error al filtrar productos por categorias en mongodb")
-    }
-  }
+    };
 
-  async ordenarPorPrecios() { 
-    try {
-      const response = await ProductsModel.aggregate([ 
-
-        {
-          $sort: { price: 1 }
+    async getProductByID (pid) {
+        try{
+            const response = await ProductsModel.findById(pid);
+            return response;
+        }catch (error) {
+            loggerDev.error(error.message)
+            throw new Error(error)
         }
-      ])
-      return response;
-    } catch (error) {
-      logger.error("Error al ordenar productos por precios en mongodb")
-    }
-  }
+    };
 
-}
+    async addProduct ({title, description, price, code, category, stock, status, thumbnails, userEmail}) {
+        try{
+            const user = await UserModel.findOne({email: userEmail});
+            if (user.role === 'premium' || user.role === 'admin'){
+                const response = await ProductsModel.create({
+                    title,
+                    description,
+                    price,
+                    code,
+                    category,
+                    stock,
+                    status,
+                    thumbnails,
+                    owner: user.email                        
+                })
+                return response;
+            } else {
+                throw new Error ({message: 'Cannot create product'})
+            }
+        }catch (error) {
+            loggerDev.error(error.message)
+            throw new Error(error)
+        }
+    };
+
+    async updateProduct (pid, obj) {
+        try{
+            await ProductsModel.updateOne({_id: pid, obj});
+            return obj;
+        }catch (error) {
+            loggerDev.error(error.message)
+            throw new Error(error)
+        }
+    };
+
+    async deleteProductByID (pid) {
+        try{
+            const response = await ProductsModel.findByIdAndDelete(pid);
+            return response;
+        }catch (error) {
+            loggerDev.error(error.message)
+            throw new Error(error)
+        }
+    };
+
+    async getProductByKey (key, value) {
+        try {
+            const query = {};
+            query[key] = value;
+            const response = await ProductsModel.find(query)
+            return response
+        }catch (error) {
+            loggerDev.error(error.message)
+            throw new Error(error)
+        }
+    };
+};   

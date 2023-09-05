@@ -1,21 +1,19 @@
-import MongoDao from "./mongo.dao";
-import { TicketModel } from "../models/ticket.model";
-import {logger} from "../../../../utils/logger.js";
+import { ticketModel } from "../models/ticket.model.js";
+import { loggerDev } from "../../../../utils/logger.js"
 
-export class DaoMDBTicket extends MongoDao {
-  constructor() {
-    super(TicketModel);
-  }
+export default class TicketDao {
+    
+    async createTicket (ticketData) {
+        try {
+            const data = await ticketModel.create ({
+                ...ticketData,
+                purchase_datetime: new Date ()
+        });
+            return data
 
-  async createTicket(ticket) {
-    try {
-      const newTicket = await TicketModel.create({
-        ...ticket,
-        created_at: new Date(),
-      });
-      return newTicket;
-    } catch (err) {
-      logger.error("Error al crear un Ticket en mongodb")
+        } catch (error) {
+            loggerDev.error(error.message)
+            throw new Error(error)
+        }
     }
-  }
-}
+};

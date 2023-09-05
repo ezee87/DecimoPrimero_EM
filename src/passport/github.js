@@ -1,6 +1,7 @@
-import { Strategy as GithubStrategy } from 'passport-github2';
-import passport from 'passport';
-import UserDao from '../persistence/daos/mongodb/dao/user.dao.js';
+import UserDao from "../persistence/daos/mongodb/dao/user.dao.js";
+import passport from "passport";
+import { Strategy as GithubStrategy } from "passport-github2";
+
 const userDao = new UserDao();
 
 const strategyOptions = {
@@ -9,18 +10,20 @@ const strategyOptions = {
     callbackURL: 'http://localhost:8080/api/users/profile-github'
 };
 
-const registerOrLogin = async(accessToken, refreshToken, profile, done) =>{
+const github = async(profile, done) =>{
+    console.log('profile:::', profile);
     const email = profile._json.email !== null ? profile._json.email : profile._json.blog;
-    const user = await userDao.getByEmail(email);
+    const user = await userDao.getUserByEmail(email);
+    
     if(user) return done(null, user);
     const newUser = await userDao.createUser({
-        first_name: profile._json.name.split(' ')[0],
-        last_name: profile._json.name.split(' ')[1],
+        firstName: profile._json.name.split(' ')[0],
+        lastName: profile._json.name.split(' ')[1] + ' ' + profile._json.name.split(' ')[2],
         email,
         password: ' ',
-        isGithub: true
+        githubUser: true
     });
     return done(null, newUser);
-}
+};
 
-passport.use('github', new GithubStrategy(strategyOptions, registerOrLogin));
+passport.use('github', new GithubStrategy(strategyOptions, github));

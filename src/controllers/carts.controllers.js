@@ -1,58 +1,77 @@
-import * as service from "../services/carts.services.js";
-import { HttpResponse } from "../utils/http.response.js";
+import {
+  getAllCartsService,
+  getCartByIdService,
+  createCartService,
+  addToCartService,
+  deleteFromCartService,
+  updateProdQuantityService
+} from '../services/carts.services.js'
+import HttpResponse from '../utils/http.response.js';
+import { loggerDev } from '../utils/logger.js';
+
 const httpResponse = new HttpResponse();
 
-export const getCartByIdCtr = async (req, res, next) => {
+export const getAllController = async (req, res, next) => {
   try {
-    const { cartId } = req.params;
-    const item = await service.getCartByIdService(cartId);
-    if (!item) return httpResponse.NotFound(res, "Carrito no encontrado");
-
-    res.json(item);
+      const docs = await getAllCartsService();
+      res.json(docs)
   } catch (error) {
-    next(error);
+      loggerDev.error(error.message)
+      return httpResponse.NotFound(res, error)
   }
 };
 
-export const getAllCartsCtr = async (req, res, next) => {
+export const getByIDController = async (req, res, next) => {
   try {
-    const items = await service.getAllCartsService();
-    res.json(items);
+      const { cid } = req.params;
+      const docs = await getCartByIdService((cid));
+      res.json(docs)
   } catch (error) {
-    next(error);
+      loggerDev.error(error.message)
+      return httpResponse.NotFound(res, error)
   }
 };
 
-export const createCartCtr = async (req, res, next) => {
+export const createCartController = async (req, res, next) => {
   try {
-    const cart = { ...req.body };
-    const newCart = await service.createCartService(cart);
-    if (!newCart) return httpResponse.NotFound(res, "Validacion erronea");
-    else res.json(newCart);
+      const docs = await createCartService();
+      res.json(docs)
   } catch (error) {
-    next(error);
+      loggerDev.error(error.message)
+      return httpResponse.ServerError(res, error)
   }
 };
 
-export const updateCartController = async (req, res, next) => {
+export const addToCartController = async (req, res, next) => {
   try {
-    const { cartId } = req.params;
-    const { product } = req.body;
-    await service.getCartByIdService(cartId);
-    const docUpd = await service.updateCartService(cartId, {
-      product,
-    });
-    res.json(docUpd);
+      const { cid, pid } = req.params;
+      const product = await addToCartService(cid,pid);
+      res.json(product)
   } catch (error) {
-    next(error);
+      loggerDev.error(error.message)
+      return httpResponse.ServerError(res, error)
   }
 };
-export const deleteCartCtr = async (req, res, next) => {
+
+export const deleteFromCartController = async (req, res, next) => {
   try {
-    const { cartId } = req.params;
-    await service.deleteCartService(cartId);
-    return httpResponse.Ok(res, "Item eliminado");
+      const { cid, pid} = req.params;
+      const productDeleted = await deleteFromCartService(cid, pid);
+      res.json(productDeleted)    
   } catch (error) {
-    next(error);
+      loggerDev.error(error.message)
+      return httpResponse.ServerError(res, error)
+  }
+};
+
+export const updateProdQuantityController = async (req, res, next) => {
+  try {
+     const {cid, pid} = req.params
+     const { quantity } = req.body
+     const product = await updateProdQuantityService(cid, pid , quantity)
+     res.json(product)
+  } catch (error) {
+      loggerDev.error(error.message)
+      return httpResponse.ServerError(res, error)
   }
 };

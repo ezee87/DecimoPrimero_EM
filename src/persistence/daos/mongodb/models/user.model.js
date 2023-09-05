@@ -1,37 +1,22 @@
-import mongoose from 'mongoose'
+import mongoose from "mongoose";
 
-const usersSchema = new mongoose.Schema({
-  first_name: {
-    type: String,
-    required: true,
-  },
-  last_name: {
-    type: String,
-    required: true,
-  },
-  email: {
-    type: String,
-    required: false,
-    unique: true,
-  },
-  age: {
-    type: Number,
-    required: true,
-    default: 0
-  },
-  password: {
-    type: String,
-    required: true,
-  },
-  role: {
-    type: String,
-    default: 'user'
-  },
-  isGithub: {
-    type: Boolean,
-    required: true,
-    default: false
-  }
-})
+const UserSchema = new mongoose.Schema({
+    firstName: { type: String, required:true },
+    lastName: { type: String, required:true },
+    email: { type: String, required:true, unique: true },
+    age: { type: Number, required:true },
+    password: { type:String, required:true, index:true },
+    cart: [{ type: mongoose.Schema.Types.ObjectId, ref: 'carts', default: [] }],
+    role: { type:String, default:'user' },
+    githubUser: { type: Boolean, required:true, default:false },
+    prodCreator: { type: Boolean, default: false }
+});
 
-export const userModel = mongoose.model('Users', usersSchema)
+UserSchema.pre('find', function(){
+    this.populate('carts')
+});
+
+export const UserModel = (
+    'users',
+    UserSchema
+);

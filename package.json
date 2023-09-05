@@ -5,7 +5,11 @@
   "main": "src/server.js",
   "type": "module",
   "scripts": {
-    "start": "nodemon ."
+    "start": "nodemon .",
+    "test": "mocha src/tests/app.test.js",
+    "testcarts": "mocha src/tests/carts.router.test.js",
+    "testproducts": "mocha src/tests/products.router.test.js",
+    "testsessions": "mocha src/tests/sessions.router.test.js"
   },
   "keywords": [],
   "author": "",
@@ -13,6 +17,7 @@
   "dependencies": {
     "@faker-js/faker": "^8.0.2",
     "bcrypt": "^5.1.0",
+    "chai-http": "^4.4.0",
     "connect-mongo": "^5.0.0",
     "cookie-parser": "^1.4.6",
     "dotenv": "^16.3.1",
@@ -24,6 +29,7 @@
     "moongose": "^1.0.0",
     "morgan": "^1.10.0",
     "multer": "^1.4.5-lts.1",
+    "nodemailer": "^6.9.4",
     "passport": "^0.6.0",
     "passport-github2": "^0.1.12",
     "passport-jwt": "^4.0.1",
@@ -35,5 +41,10 @@
     "swagger-ui-express": "^5.0.0",
     "winston": "^3.10.0",
     "winston-mongodb": "^5.1.1"
+  },
+  "devDependencies": {
+    "chai": "^4.3.8",
+    "mocha": "^10.2.0",
+    "supertest": "^6.3.3"
   }
 }

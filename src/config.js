@@ -1,9 +1,11 @@
 import 'dotenv/config';
 
 export default {
-    NODE_ENV: process.env.NODE_ENV,
-    MONGO_LOCAL: process.env.MONGO_LOCAL,
-    MONGO_QA: process.env.MONGO_QA,
-    MONGO_PROD: process.env.MONGO_PROD,
-    PORT: process.env.PORT
-}
+    port: process.env.port,
+    privateKeyJWT: process.env.privateKeyJWT,
+    MONGO_ATLAS_URL: process.env.MONGO_ATLAS_URL,
+    host: process.env.host,
+    passEthereal: process.env.passEthereal,
+    emailEthereal: process.env.emailEthereal,
+    portEthereal: process.env.portEthereal,
+};

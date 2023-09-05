@@ -1,26 +1,24 @@
 import { Router } from "express";
-import {
-  getAllCartsCtr,
-  getCartByIdCtr,
-  createCartCtr,
-  updateCartController,
-  deleteCartCtr,
-} from "../controllers/carts.controllers.js";
-
-import { ControllerTicket } from "../controllers/ticket.controllers.js";
-const ticketController = new ControllerTicket();
-
-import ProductController from "../controllers/products.controllers.js";
-const productController = new ProductController();
+import { 
+    getAllController,
+    getByIDController,
+    createCartController,
+    addToCartController,
+    deleteFromCartController,
+    updateProdQuantityController
+} from '../controllers/carts.controllers.js'
+import { isUser } from '../middlewares/authorization.js'
+import { checkAuth } from '../jwt/auth.js'
+import TicketController from "../controllers/ticket.controllers.js";
 
 const router = Router();
 
-router.get("/", getAllCartsCtr);
-router.get("/:cartId", getCartByIdCtr);
-router.post("/", createCartCtr);
-router.put("/:cartId", updateCartController);
-router.delete("/:cartId", deleteCartCtr);
-router.post("/:cartId/add/:prodId", productController.addProductToCartCtr);
+router.get('/', getAllController);
+router.get('/:id', getByIDController);
+router.post('/', createCartController);
+router.put('/:cid/product/:pid', checkAuth, isUser, addToCartController);
+router.delete('/:cid/products/:pid', deleteFromCartController);
+router.put('/:cid/quantity/:pid', updateProdQuantityController);
+/* router.post("/:cid/purchase" , TicketController.generateTicket) */
 
-router.post("/:cartId/purchase", ticketController.createTicket);
 export default router;

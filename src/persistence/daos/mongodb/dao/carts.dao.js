@@ -1,48 +1,140 @@
 import { CartModel } from "../models/carts.model.js";
-import {logger} from "../../../../utils/logger.js";
+import { UserModel } from "../models/user.model.js";
+import { ProductsModel } from "../models/products.model.js";
+import { loggerDev } from "../../../../utils/logger.js";
 
-export default class CartDaoMongoDB {
-  async getAllCarts() {
-    try {
-      const response = await CartModel.find({});
-      return response;
-    } catch (error) {
-      logger.error("Error al traer todos los carritos en mongodb")
-    }
-  }
-  async getCartById(id) {
-    try {
-      const response = await CartModel.findById(id);
-      return response.populate("products");
-    } catch (error) {
-      logger.error("Error al traer carrito por ID en mongodb")
-    }
-  }
+export default class CartDao {
 
-  async createCart(obj) {
-    try {
-      const response = await CartModel.create(obj);
-      return response;
-    } catch (error) {
-      logger.error("Error al crear carritos en mongodb")
-    }
-  }
+    async getAllCarts() {
+        try{
+            const response = await CartModel.find({})
+            return response
+        }catch (error){
+            loggerDev.error(error.message)
+            throw new Error(error)
+        }
+    };
+    
+    async createCart () {
+        try{
+            const response = await CartModel.create({})
+            return response;
+        } catch(error) {
+            loggerDev.error(error.message)
+            throw new Error(error)
+        }
+    };
 
-  async updateCart(id, obj) {
-    try {
-      await CartModel.updateOne({ _id: id }, obj);
-      return obj;
-    } catch (error) {
-      logger.error("Error al actualizar un carrito en mongodb")
-    }
-  }
+    async getCartByID (cid) {
+        try{
+            const response = await CartModel.findOne({_id: cid}).populate('products._id');
+            return response;
+        }catch(error) {
+            loggerDev.error(error.message)
+            throw new Error(error)
+        }
+    };
 
-  async deleteCart(id) {
-    try {
-      const response = await CartModel.findByIdAndDelete(id);
-      return response;
-    } catch (error) {
-      logger.error("Error al eliminar un carrito en mongodb")
-    }
-  }
-}
+
+    async addToCart (cid, pid, uid) {
+        try{
+            const cartFinder = await CartModel.findById(cid);
+            const user = await UserModel.findById(uid);
+            const product = await ProductsModel.findById(pid);
+
+            if(!cartFinder) throw new Error ('Cart not found!')
+            const existingProduct = cartFinder.products.find(prod => prod._id === pid)
+            if (existingProduct && user.model === 'premium' && product.owner === user.email){
+                const updtQuantity = existingProduct.quantity + 1
+                await CartModel.updateOne(
+                    {_id: cid},
+                    {$set: {'products.$.quantity': updtQuantity}}
+                );
+            } else {
+                await CartModel.findOneAndUpdate(
+                    {_id: cid},
+                    {$push: {products: {_id: prodId, quantity: 1}}},
+                )
+            };
+            const cartUpdate = await CartModel.findById(cid).populate('products._id')
+            return cartUpdate            
+        }catch (error){
+            loggerDev.error(error.message)
+            throw new Error(error)
+        }
+    };
+
+    async deleteProdFromCart (pid, cid){
+        try {
+            const cartFinder = await CartModel.findById(cid);
+            const existingProduct = cartFinder.products.find(prod => prod._id === pid);
+            if(!existingProduct){
+                throw new Error('The product you are trying to remove does not exist')
+            } else{
+                if(existingProduct.quantity > 1){
+                    const updtQuantity = existingProduct.quantity - 1
+                    await CartModel.updateOne(
+                        {_id: cid, 'products._id': pid},
+                        {$set: {'products.$.quantity': updtQuantity}}
+                    );
+                } else{
+                    await CartModel.findOneAndUpdate(
+                        {_id: cid},
+                        {$pull: {products: {_id: pid}}},
+                    );
+                };
+            };
+            const cartUpdate = await CartModel.findById(cid).populate('products._id')
+            return cartUpdate
+        } catch (error) {
+            loggerDev.error(error.message)
+            throw new Error(error)
+        };
+    };
+
+    async updateProductQuantity (cid, pid, newQuantity) {
+        try {
+            const cartFinder = await CartModel.findById(cid);
+            const existingProduct = cartFinder.products.find(prod => prod._id === pid);
+            if(!existingProduct){
+                throw new Error('the product you are trying to update does not exist')
+            } else
+                existingProduct.quantity = newQuantity
+                if(existingProduct.quantity > 1){
+                    await CartModel.updateOne(
+                        {_id: cid, 'products._id': pid},
+                        {$set: {'products.$.quantity': newQuantity}}
+                    );
+                } else{
+                    await CartModel.findOneAndUpdate(
+                        {_id: cid},
+                        {$pull: {products: {_id: pid}}},
+                    );
+                };
+                const cartUpdate = await CartModel.findById(cid).populate('products._id')
+                return cartUpdate
+            } catch (error) {
+                loggerDev.error(error.message)
+                throw new Error(error)
+        };
+    };
+
+    async getCartByUser(uid) {
+        try {
+            const user = await UserModel.findOne({ _id: uid }).populate('carts');
+            if (user) {
+                if (user.cart) {
+                    return user.cart;
+                } else {
+                    return { message: 'Cart user not found' };
+                }
+            } else {
+                return { message: 'User not found' };
+            }
+        } catch (error) {
+            loggerDev.error(error.message)
+            throw new Error(error)
+        }
+    };
+
+};

@@ -1,36 +1,22 @@
 import { Router } from "express";
-import ProductController from "../controllers/products.controllers.js";
-import * as productsFakerController from "../controllers/productsFaker.controllers.js";
-import { isAdmin } from "../middlewares/isAdmin.js";
-const controller = new ProductController();
+import {
+    getAllController,
+    getByIDController,
+    addController,
+    updateController,
+    deleteByIDController,
+    getByKeyController
+} from '../controllers/products.controllers.js'
+import { isAdmin, isPremium } from "../middlewares/authorization.js";
+import { checkAuth } from "../jwt/auth.js";
 
 const router = Router();
 
-router.post("/mockingproducts", productsFakerController.createProductsFaker);
-router.get("/mockingproducts", productsFakerController.getProductsFaker);
-
-
-router.get("/", controller.getAll);
-
-router.get("/:id", controller.getById);
-
-router.get("/dto/:id", controller.getProdById);
-
-/* router.get("/filtrar", controller.filtrarPorCategorias);
-
-router.get("/ordenar", controller.ordenarPorPrecios); */
-
-router.post("/", isAdmin, controller.create);
-
-router.post("/dto", controller.createProd);
-
-router.post("/:id/add/:prodId", controller.addProductToCartCtr);
-
-/* router.delete("/:id/del/:prodId", controller.delProductCartController); */
-
-router.put("/:id", isAdmin, controller.update);
-
-router.delete("/:id", isAdmin, controller.delete);
-
+router.get('/', getAllController);
+router.get('/:pid',  getByIDController);
+router.post('/', checkAuth, isPremium, addController);
+router.put('/:pid', checkAuth, isAdmin, updateController);
+router.delete('/:pid', checkAuth, isAdmin, deleteByIDController);
+router.get('/search/:key/:value', getByKeyController)
 
 export default router;

@@ -1,58 +1,74 @@
-import CartDaoMongoDB from "../persistence/daos/mongodb/dao/carts.dao.js";
-const cartDao = new CartDaoMongoDB();
-import fs from "fs";
-import { __dirname } from "../utils.js";
-import {logger} from "../utils/logger.js"
+import CartDao from '../persistence/daos/mongodb/dao/carts.dao.js';
+import HttpResponse from '../utils/http.response.js';
+import { loggerDev } from '../utils/logger.js';
 
-export const getCartByIdService = async (id) => {
-  try {
-    const item = await cartDao.getCartById(id);
-    if (!item) throw new Error("Cart not found!");
-    else return item;
-  } catch (error) {
-    logger.error("Error en el servicio de traer un carrito por Id")
-  }
-};
+const cartDao = new CartDao();
+const httpResponse = new HttpResponse();
 
 export const getAllCartsService = async () => {
-  try {
-    const item = await cartDao.getAllCarts();
-    if (!item) throw new Error("Cart not found!");
-    else return item;
-  } catch (error) {
-    logger.error("Error en el servicio de traer todos los carritos")
-  }
-};
-
-export const createCartService = async (obj) => {
-  try {
-    const newCart = await cartDao.createCart(obj);
-    if (!newCart) throw new Error("Validation Error!");
-    else return newCart;
-  } catch (error) {
-    logger.error("Error en el servicio de crear un carrito")
-  }
-};
-
-export const updateCartService = async (id, obj) => {
-  try {
-    let item = await cartDao.getCartById(id);
-    if (!item) {
-      throw new Error("Cart not found!");
-    } else {
-      const cartUpdated = await cartDao.updateCart(id, obj);
-      return cartUpdated;
+    try {
+      const docs = await cartDao.getAllCarts();
+      return docs;
+    } catch (error) {
+        loggerDev.error(error.message)
+        throw new Error (error)
     }
-  } catch (error) {
-    logger.error("Error en el servicio de actualizar un carrito por Id")
-  }
 };
 
-export const deleteCartService = async (id) => {
-  try {
-    const cartDeleted = await cartDao.deleteCart(id);
-    return cartDeleted;
-  } catch (error) {
-    logger.error("Error en el servicio de eliminar un carrito por Id")
-  }
+export const getCartByIdService = async (cid) => {
+    try {
+      const documentByID = await cartDao.getCartByID(cid);
+      if (!documentByID)
+        return 'The cart does not exist!';
+      else return doc;
+    } catch (error) {
+        loggerDev.error(error.message)
+        throw new Error (error)
+    }
+};  
+
+export const createCartService = async () =>{
+    try {
+        const newCart = await cartDao.createCart();
+        return newCart;
+    } catch (error) {
+        loggerDev.error(error.message)
+        throw new Error (error)
+    }
+};
+ 
+export const addToCartService = async (cid, pid) =>{
+    try {
+        const documentAdded = await cartDao.addToCart(cid, pid);
+        return documentAdded;
+    } catch (error) {
+      loggerDev.error(error.message)
+        throw new Error (error)
+    }
+};
+
+export const deleteFromCartService = async (cid, pid) => {
+    try {
+      const prodDeleted = await cartDao.deleteProdFromCart(cid, pid);
+      if(!prodDeleted){
+        throw new Error ('Product not found')
+      }
+      return prodDeleted
+    } catch (error) {
+        loggerDev.error(error.message)
+        throw new Error (error)
+    }
+};
+
+export const updateProdQuantityService = async (cid, pid, quantity) =>{
+    try {
+      const prod = await cartDao.updateProdQuantityService(cid, pid, quantity)
+      if (!prod) {
+        return httpResponse.NotFound(res.error)
+      }
+      return prod;
+    } catch (error) {
+      loggerDev.error(error.message)
+      throw new Error (error)
+    }
 };

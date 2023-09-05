@@ -1,94 +1,125 @@
-import "./db/database.js";
 import express from 'express';
-import cookieParser from 'cookie-parser'
-import session from 'express-session'
-import mongoStore from 'connect-mongo'
-import morgan from 'morgan';
+import { __dirname } from './utils/utils.js';
 import { errorHandler } from './middlewares/errorHandler.js';
-import { __dirname } from './utils.js';
-import { Server } from 'socket.io';
+import './db/database.js';
 import handlebars from 'express-handlebars';
-import ProductManager from "./persistence/daos/mongodb/dao/products.dao.js";
-import MessagesManager from "./persistence/daos/filesystem/messages.dao.js";
+import { Server } from 'socket.io';
+import cookieParser from 'cookie-parser';
+import MongoStore from 'connect-mongo';
+import session from 'express-session';
 import passport from 'passport';
-import routerApi from './routes/index.js';
-import config from './config.js';
-import { logger } from './utils/logger.js';
+import config from './config.js'
+import { loggerDev } from './utils/logger.js';
+import dotenv from 'dotenv';
 import swaggerUI from 'swagger-ui-express';
 import swaggerJSDoc from 'swagger-jsdoc';
 import { info } from './docs/info.js';
-import "./persistence/daos/mongodb/connection.js";
-import './passport/local.js';
-import './passport/github.js';
-import './passport/jwt.js';
+import productRouter from './routes/productsRouter.js';
+import cartRouter from './routes/cartRouter.js';
+import viewsRouter from './routes/viewsRouter.js';
+import usersRouter from './routes/users.router.js';
+import productRouterFake from './routes/productRouterFake.js'
 
+dotenv.config();
 
-const productManager = new ProductManager(__dirname + "/daos/filesystem/products.json");
-const messagesManager = new MessagesManager(__dirname + "/daos/filesystem/messages.json");
-
+const port = config.port || 8080;
 const app = express();
+
+app.use(express.json());
+app.use(express.urlencoded({extended: true}));
+app.use(express.static(__dirname + '/public'));
+app.use(errorHandler);
+app.use(cookieParser());
+
+/* ROUTES */
+
+app.use('/products', productRouter);
+app.use('/cart', cartRouter);
+app.use('/users', usersRouter);
+app.use('/', viewsRouter);
+app.use('/productsMock', productRouterFake);
+/* app.use('/loggerTest', loggerRouterTest); */
+
+
+/* SWAGGER */
 
 const specs = swaggerJSDoc(info);
 app.use('/docs', swaggerUI.serve, swaggerUI.setup(specs));
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser())
-app.use(morgan('dev'));
-app.use(errorHandler);
-app.use(express.static(__dirname + '/public'));
+/* HANDLEBARS */
 
 app.engine('handlebars', handlebars.engine());
 app.set('view engine', 'handlebars');
-app.set('views', __dirname + '/views');
+app.set('views', __dirname +'/views');
 
-app.use(
-  session({
-    secret: 'sessionKey',
+/* MONGODB */
+
+const storeOptions = {
+    store: new MongoStore ({
+        mongoUrl: 'mongodb+srv://ezequielM:admin@cluster0.rbgchkc.mongodb.net/ecommerce?retryWrites=true&w=majority',
+        crypto: {
+            secret: 'secretPass'
+        },
+        ttl: 60,
+        autoRemove: 'interval',
+        autoRemoveInterval: 10,
+    }),
+    secret: 'secretPass2',
     resave: false,
     saveUninitialized: true,
     cookie: {
-      maxAge: 100000
-    },
-    store: new mongoStore({
-      mongoUrl: 'mongodb+srv://ezequielM:admin@cluster0.rbgchkc.mongodb.net/ecommerce?retryWrites=true&w=majority',
-    }),
-  })
-)
+        maxAge: 60000
+    }
+}; 
+
+app.use(session(storeOptions));
+
+/* PASSPORT */
 
 app.use(passport.initialize());
 app.use(passport.session());
 
-app.use('/api', routerApi);
+/* PORT */
 
-const PORT = config.PORT;
+const httpServer = app.listen(port, () => {
+    loggerDev.info(`Server listening at http://localhost:${port}`);
+  });
 
-const httpServer = app.listen(PORT, () => {
-  logger.info(`Servidor express escuchando en el puerto ${PORT}`)
 
-});
+/* WEBSOCKET */
 
 const socketServer = new Server(httpServer);
 
-const arrayProducts = [];
+socketServer.on('connection',  async (socket) =>{
+    console.log(`Client connected: ${socket.id}`)
 
-socketServer.on("connection", async (socket) => {
-  logger.info("Usuario socket conectado")
-  socket.on("disconnect", () => {
-   logger.info("usuario desconectado!");
-  });
+    socket.on('newProduct', async(product) =>{
+        await productManager.addProduct(product)
+        socketServer.emit('arrayProducts', await productManager.getProducts())
+    });
 
-  socketServer.emit("messages", await messagesManager.getAllmessage());
+    socketServer.emit("messages", await messagesManager.getAllMessages());
 
-  socketServer.emit("arrayProducts", arrayProducts);
+    socket.on("disconnect", () => {
+        console.log("¡User disconnect!");
+    });
 
-  socket.on("chat:message", async (message) => {
-    await messagesManager.createMessage(message);
-    socketServer.emit("messages", await messagesManager.getAllMessage());
-  });
+    socket.on("newUser", (userName) => {
+        console.log(`${userName} is logged in`);
+    });
 
-  socket.on("newProduct", (obj) => {
-    arrayProducts.push(obj);
-    socketServer.emit("arrayProducts", arrayProducts);
-  });
+    socket.on("chat:message", async ({ userName, message }) => {
+        await messagesManager.createMessage(userName, message);
+        socketServer.emit("messages", await messagesManager.getAllMessages());
+    });
+
+    socket.on("newUser", (userName) => {
+        socket.broadcast.emit("newUser", userName);
+    });
+
+    socket.on("chat:typing", (data) => {
+        socket.broadcast.emit("chat:typing", data);
+    });    
 });
+
+export {app}

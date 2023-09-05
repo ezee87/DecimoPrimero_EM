@@ -1,52 +1,48 @@
-import UserDao from '../persistence/daos/mongodb/dao/user.dao.js';
-const userDao = new UserDao();
+import UserDao from "../persistence/daos/mongodb/dao/user.dao.js";
 import passport from 'passport';
-import { Strategy as LocalStrategy } from 'passport-local';
-import {logger} from "../utils/logger.js"
+import { Strategy as LocalStrategy } from "passport-local";
+
+const userDao = new UserDao()
 
 const strategyOptions = {
-    usernameField: 'email',
+    userNameField: 'email',
     passwordField: 'password',
     passReqToCallback: true
 };
 
-const signup = async (req, email, password, done) =>{
+const register = async (req, email, password, done) => {
     try {
-        const user = await userDao.getByEmail(email);
-        if(user) return done(null, false);
+        const user = await userDao.getUserByEmail(email);
+        if (user) return done(null, false);
         const newUser = await userDao.createUser(req.body);
-        return done(null, newUser);
-
+        return done(null, newUser)            
     } catch (error) {
-        logger.error("Error en signup passport local")
+        console.log(error)
     }
 };
 
-const login = async (req, email, password, done) =>{
-    const user = { email, password };
-    const userLogin = await userDao.loginUser(user);
-    if(!userLogin) return done(null, false);
-    return done(null, userLogin);
+const login = async (req, email, password, done) => {
+    try {
+        const user = { email, password};
+        const userLogin = await userDao.loginUser(user);
+        if(!userLogin) return done(null, false);
+        return done(null, userLogin)
+    } catch {
+        console.log(error)
+    }
 };
 
-const signupStrategy = new LocalStrategy(strategyOptions, signup);
+const registerStrategy = new LocalStrategy(strategyOptions, register);
 const loginStrategy = new LocalStrategy(strategyOptions, login);
 
-passport.use('register', signupStrategy);
+passport.use('register', registerStrategy);
 passport.use('login', loginStrategy);
 
-//registra al user en req.session.passport
-passport.serializeUser((user, done)=>{
-    done(null, user._id);
+passport.serializeUser((user, done) => {
+    return done(null, user._id)
 });
 
-passport.deserializeUser(async(id, done)=>{
-    const user = await userDao.getById(id);
-    return done(null, user);
+passport.deserializeUser(async (id, done) => {
+    const user = await UserDao.getUserByID(id);
+    return done(null, user)
 });
-
-export const frontResponse = {
-    failureRedirect: '/views/error-login',
-    successRedirect: '/views/profile',
-    passReqToCallback: true,
-}
