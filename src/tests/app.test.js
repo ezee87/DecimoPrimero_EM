@@ -1,4 +1,4 @@
-import app from '../../app.js';
+import app from "../server.js";
 import request from 'supertest';
 import mongoose from 'mongoose';
 
@@ -13,21 +13,18 @@ const doc = {
     thumbnails: "tshirt1.jpg"
 };
 
-describe ( 'Integral product test', () => {
+describe('Integral product test', () => {
     let authToken;
 
-    beforeAll(async ()=>{
+    beforeAll(async () => {
         const userCredentials = {
             email: 'p@mail.com',
             password: '123'
-        }
+        };
+
+        const userResponse = await request(app).post('/users/login').send(userCredentials);
+        authToken = userResponse.header.authorization;
     });
-
-    const userResponse = await (request(app).post('/users/login').send(userCredentials));
-
-    authToken = userResponse.header.authorization;
-
-});
 
 test('[POST] /products', async () => {
     const response = await request(app).post('/products').send(doc).set('Authorization', `Bearer ${authToken}`)
@@ -69,7 +66,7 @@ test('[PUT] /products/:id', async()=>{
       description: "White cotton T-shirtACT",
       price: 100,
       code: "Shirt1ACT",
-      status: truw,
+      status: true,
       stock: 123,
       category: "clothingACT",
       thumbnails: "tshirt1.jpgACT",
@@ -81,6 +78,8 @@ test('[PUT] /products/:id', async()=>{
     expect(statusCode).toBe(200);
     const responsePutBody = responsePut.body.body;
     expect(responsePutBody).toBe(docUpdated.body);
+
+});
 
 });
 

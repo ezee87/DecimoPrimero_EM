@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "nodemon .",
-    "test": "mocha src/tests/app.test.js",
+    "test": "set NODE_OPTIONS=--experimental-vm-modules && npx jest /src/tests/app.test.js",
     "testcarts": "mocha src/tests/carts.router.test.js",
     "testproducts": "mocha src/tests/products.router.test.js",
     "testsessions": "mocha src/tests/sessions.router.test.js"

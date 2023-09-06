@@ -8,17 +8,17 @@ import cookieParser from 'cookie-parser';
 import MongoStore from 'connect-mongo';
 import session from 'express-session';
 import passport from 'passport';
+import productRouter from './routes/productsRouter.js';
+import cartRouter from './routes/cartRouter.js';
+import viewsRouter from './routes/viewsRouter.js';
+import usersRouter from './routes/users.router.js';
+import productRouterFake from './routes/productRouterFake.js'
 import config from './config.js'
 import { loggerDev } from './utils/logger.js';
 import dotenv from 'dotenv';
 import swaggerUI from 'swagger-ui-express';
 import swaggerJSDoc from 'swagger-jsdoc';
 import { info } from './docs/info.js';
-import productRouter from './routes/productsRouter.js';
-import cartRouter from './routes/cartRouter.js';
-import viewsRouter from './routes/viewsRouter.js';
-import usersRouter from './routes/users.router.js';
-import productRouterFake from './routes/productRouterFake.js'
 
 dotenv.config();
 
@@ -38,8 +38,6 @@ app.use('/cart', cartRouter);
 app.use('/users', usersRouter);
 app.use('/', viewsRouter);
 app.use('/productsMock', productRouterFake);
-/* app.use('/loggerTest', loggerRouterTest); */
-
 
 /* SWAGGER */
 
@@ -56,7 +54,7 @@ app.set('views', __dirname +'/views');
 
 const storeOptions = {
     store: new MongoStore ({
-        mongoUrl: 'mongodb+srv://ezequielM:admin@cluster0.rbgchkc.mongodb.net/ecommerce?retryWrites=true&w=majority',
+        mongoUrl: 'mongodb+srv://bbastieri:Galito01@cluster0.fnqi1b0.mongodb.net/ecommerce?retryWrites=true&w=majority',
         crypto: {
             secret: 'secretPass'
         },
@@ -122,4 +120,4 @@ socketServer.on('connection',  async (socket) =>{
     });    
 });
 
-export {app}
+export default app;
